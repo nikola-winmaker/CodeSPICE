@@ -4,8 +4,8 @@
     "size": 2
   },
   "namingConventions": {
-    "variable": "camelCase",
-    "function": "PascalCase",
+    "variable": "snake_case",
+    "function": "snake_case",
     "constant": "UPPER_CASE"
   },
   "spacing": {

@@ -27,12 +27,14 @@ export function activate(context: vscode.ExtensionContext) {
     let maxLineCount = configuration.fileLength?.maxLines ?? 400;
     let maxLineLength = configuration.lineLength?.maxLength ?? 80;
     let requireCommentHeader = configuration.commenting?.requireHeader ?? true;
+    let namingConventions = configuration.namingConventions ?? {};
 
     // Iterate over all open text documents and evaluate the line count
     vscode.window.visibleTextEditors.forEach((editor) => {
         const lineCount = editor.document.lineCount;
         evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
         evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
+        evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
     });
 
     // Register a listener for changes in the active text document
@@ -44,6 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
             // Evaluate the line count and update the diagnostics
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
+            evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
         }
     });
 
@@ -54,6 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
             // Evaluate the line count and update the diagnostics
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
+            evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
         }
     });
 
@@ -67,6 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
             affectedEditors.forEach((editor) => {
                 evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
                 evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
+                evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
             });
         }
     });
@@ -140,6 +145,59 @@ function evaluateCommenting(editor: vscode.TextEditor, requireCommentHeader: boo
         diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
     } else {
         diagnosticCollection.delete(editor.document.uri);
+    }
+}
+
+function evaluateNamingConventions(editor: vscode.TextEditor, namingConventions: any, 
+    diagnosticCollection: vscode.DiagnosticCollection) {
+    const text = editor.document.getText();
+    const vnamingConvention = namingConventions.variable;
+
+    const lines = text.split('\n');
+    const newDiagnostics: vscode.Diagnostic[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Skip lines starting with #
+        if (line.startsWith('#')) {
+            continue;
+        }
+
+        const nameRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+        let match;
+
+        while ((match = nameRegex.exec(line))) {
+            const foundName = match[1];
+            if (!isNameValid(foundName, vnamingConvention)) {
+                const diagnostic = new vscode.Diagnostic(
+                    new vscode.Range(i, match.index, i, match.index + foundName.length),
+                    `Invalid naming '${foundName}'. Names should follow the naming convention '${vnamingConvention}'.`,
+                    vscode.DiagnosticSeverity.Warning
+                );
+                newDiagnostics.push(diagnostic);
+            }
+        }
+    }
+
+    const existingDiagnostics = diagnosticCollection.get(editor.document.uri) || [];
+    const updatedDiagnostics = [...existingDiagnostics, ...newDiagnostics];
+    diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
+}
+
+
+function isNameValid(name: string, convention: string): boolean {
+    switch (convention) {
+        case "camelCase":
+            return /^([a-z][a-zA-Z0-9]*)$/.test(name);
+        case "PascalCase":
+            return /^([A-Z][a-zA-Z0-9]*)$/.test(name);
+        case "UPPER_CASE":
+            return /^([A-Z_][A-Z0-9_]*)$/.test(name);
+        case "snake_case":
+            return /^([a-z][a-z_0-9]*)$/.test(name);
+        default:
+            return true;
     }
 }
 
