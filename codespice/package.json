@@ -21,10 +21,10 @@
     "configuration": {
       "title": "CodeSPICE",
       "properties": {
-          "codespice.maxLineCount": {
-              "type": "number",
-              "default": 400,
-              "description": "The maximum line count to trigger a warning"
+          "codespice.jsonConfigurationPath": {
+            "type": "string",
+            "default": "",
+            "description": "The file path of the JSON configuration for coding guidelines"
           }
       }
     }
