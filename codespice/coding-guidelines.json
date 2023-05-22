@@ -1,0 +1,24 @@
+{
+  "indentation": {
+    "type": "spaces",
+    "size": 2
+  },
+  "namingConventions": {
+    "variable": "camelCase",
+    "function": "PascalCase",
+    "constant": "UPPER_CASE"
+  },
+  "spacing": {
+    "aroundOperators": true,
+    "beforeBraces": true
+  },
+  "lineLength": {
+    "maxLength": 80
+  },
+  "commenting": {
+    "requireHeader": true
+  },
+  "fileLength": {
+    "maxLines": 500
+  }
+}
