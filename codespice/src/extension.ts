@@ -25,11 +25,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Retrieve the maximum line count from the loaded JSON configuration
     let maxLineCount = configuration.fileLength?.maxLines ?? 400;
+    let maxLineLength = configuration.lineLength?.maxLength ?? 80;
+    let requireCommentHeader = configuration.commenting?.requireHeader ?? true;
 
     // Iterate over all open text documents and evaluate the line count
     vscode.window.visibleTextEditors.forEach((editor) => {
         const lineCount = editor.document.lineCount;
-        evaluateLineCount(editor, lineCount, maxLineCount, diagnosticCollection);
+        evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
+        evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
     });
 
     // Register a listener for changes in the active text document
@@ -39,7 +42,8 @@ export function activate(context: vscode.ExtensionContext) {
         if (editor && event.document === editor.document) {
             const lineCount = event.document.lineCount;
             // Evaluate the line count and update the diagnostics
-            evaluateLineCount(editor, lineCount, maxLineCount, diagnosticCollection);
+            evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
+            evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
         }
     });
 
@@ -48,7 +52,8 @@ export function activate(context: vscode.ExtensionContext) {
         if (editor) {
             const lineCount = editor.document.lineCount;
             // Evaluate the line count and update the diagnostics
-            evaluateLineCount(editor, lineCount, maxLineCount, diagnosticCollection);
+            evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
+            evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
         }
     });
 
@@ -60,7 +65,8 @@ export function activate(context: vscode.ExtensionContext) {
             const lineCount = event.document.lineCount;
             // Evaluate the line count and update the diagnostics for each affected editor
             affectedEditors.forEach((editor) => {
-                evaluateLineCount(editor, lineCount, maxLineCount, diagnosticCollection);
+                evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
+                evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             });
         }
     });
@@ -71,7 +77,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {/* empty for now*/}
 
-function evaluateLineCount(editor: vscode.TextEditor, lineCount: number, maxLineCount: number, diagnosticCollection: vscode.DiagnosticCollection) {
+function evaluateLineCount(editor: vscode.TextEditor, lineCount: number, maxLineCount: number, maxLineLength: number, diagnosticCollection: vscode.DiagnosticCollection) {
+    const existingDiagnostics = diagnosticCollection.get(editor.document.uri) || [];
+    const lineCountDiagnostics = existingDiagnostics.filter(diagnostic => diagnostic.source === 'LineCount');
+    const text = editor.document.getText();
+    const lines = text.split('\n');
+
     if (lineCount > maxLineCount) {
         // Create a diagnostic warning for the exceeded line count
         const diagnostic = new vscode.Diagnostic(
@@ -79,11 +90,56 @@ function evaluateLineCount(editor: vscode.TextEditor, lineCount: number, maxLine
             `Your code exceeds ${maxLineCount} lines. Consider refactoring.`,
             vscode.DiagnosticSeverity.Warning
         );
-        // Add the diagnostic to the collection
-        diagnosticCollection.set(editor.document.uri, [diagnostic]);
+        lineCountDiagnostics.push(diagnostic);
+    } 
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const lineLength = line.trim().length;
+
+        if (lineLength > maxLineLength) {
+            // Create a diagnostic warning for the exceeded comment line length
+            const diagnostic = new vscode.Diagnostic(
+                new vscode.Range(i, 0, i, lineLength),
+                `Comment line exceeds the maximum length of ${maxLineLength} characters.`,
+                vscode.DiagnosticSeverity.Warning
+            );
+            lineCountDiagnostics.push(diagnostic);
+        }
+    }
+
+    diagnosticCollection.set(editor.document.uri, lineCountDiagnostics);
+}
+
+function evaluateCommenting(editor: vscode.TextEditor, requireCommentHeader: boolean, diagnosticCollection: vscode.DiagnosticCollection) {
+    const existingDiagnostics = diagnosticCollection.get(editor.document.uri) || [];
+    const commentingDiagnostics: vscode.Diagnostic[] = [];
+    const text = editor.document.getText();
+    const lines = text.split('\n');
+
+    if (requireCommentHeader) {
+        const firstLine = lines[0];
+        if (!firstLine || !firstLine.trim().startsWith('//')) {
+            // Create a diagnostic warning for the missing comment header
+            const diagnostic = new vscode.Diagnostic(
+                new vscode.Range(0, 0, 0, 0),
+                'Comment header is required at the beginning of the file.',
+                vscode.DiagnosticSeverity.Warning
+            );
+            commentingDiagnostics.push(diagnostic);
+        }
+    }
+
+    // Filter out existing diagnostics not related to commenting
+    const filteredDiagnostics = existingDiagnostics.filter(diagnostic => diagnostic.source !== 'Commenting');
+
+    // Combine the filtered diagnostics with the commenting diagnostics
+    const updatedDiagnostics = [...filteredDiagnostics, ...commentingDiagnostics];
+
+    if (updatedDiagnostics.length > 0) {
+        diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
     } else {
-        // Clear any existing diagnostics
-        diagnosticCollection.clear();
+        diagnosticCollection.delete(editor.document.uri);
     }
 }
 
