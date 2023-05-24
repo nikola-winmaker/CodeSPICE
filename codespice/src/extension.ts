@@ -28,6 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
     let maxLineLength = configuration.lineLength?.maxLength ?? 80;
     let requireCommentHeader = configuration.commenting?.requireHeader ?? true;
     let namingConventions = configuration.namingConventions ?? {};
+    let maxCyclomatic = configuration.function.maxCyclomatic ?? 15;
 
     // Iterate over all open text documents and evaluate the line count
     vscode.window.visibleTextEditors.forEach((editor) => {
@@ -35,6 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
         evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
         evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
         evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
+        evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
     });
 
     // Register a listener for changes in the active text document
@@ -47,6 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
+            evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
         }
     });
 
@@ -58,6 +61,7 @@ export function activate(context: vscode.ExtensionContext) {
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
+            evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
         }
     });
 
@@ -72,6 +76,7 @@ export function activate(context: vscode.ExtensionContext) {
                 evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
                 evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
                 evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
+                evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
             });
         }
     });
@@ -201,6 +206,81 @@ function isNameValid(name: string, convention: string): boolean {
     }
 }
 
+function evaluateCyclomaticComplexity(editor: vscode.TextEditor, maxCyclomatic: number,
+                                      diagnosticCollection: vscode.DiagnosticCollection) {
+    const text = editor.document.getText();
+    const lines = text.split('\n');
+    const diagnostics = [];
+
+    // Regular expression to match function declarations
+    const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*\{/g;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Skip lines starting with #
+        if (line.startsWith('#')) {
+            continue;
+        }
+
+        // Check if the line contains a function declaration
+        const match = functionRegex.exec(line);
+        if (match) {
+            const functionName = match[1];
+            const functionStartLine = i;
+            const functionEndLine = findMatchingClosingBrace(lines, i);
+            const functionCode = lines.slice(functionStartLine, functionEndLine + 1).join('\n');
+            const complexity = calculateCyclomaticComplexity(functionCode);
+
+            if (complexity > maxCyclomatic) {
+                const diagnostic = new vscode.Diagnostic(
+                    new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+                    `Function '${functionName}' has a cyclomatic complexity of ${complexity}.`,
+                    vscode.DiagnosticSeverity.Warning
+                );
+                diagnostics.push(diagnostic);
+            }
+        }
+    }
+
+    const existingDiagnostics = diagnosticCollection.get(editor.document.uri) || [];
+    const updatedDiagnostics = [...existingDiagnostics, ...diagnostics];
+    diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
+}
+
+
+function calculateCyclomaticComplexity(code: string): number {
+    // Regular expression to match decision points (if, else if, else, for, while)
+    const decisionRegex = /(if|else if|else|for|while)\s*\([^)]*\)\s*\{/g;
+  
+    const matches = code.match(decisionRegex);
+    const complexity = matches ? matches.length + 1 : 1;
+  
+    return complexity;
+}
+
+function findMatchingClosingBrace(lines: string[], startIndex: number): number {
+    let braceCount = 0;
+
+    for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        if (line.includes('{')) {
+            braceCount++;
+        }
+
+        if (line.includes('}')) {
+            braceCount--;
+
+            if (braceCount === 0) {
+                return i;
+            }
+        }
+    }
+
+    return startIndex;
+}
+
 function loadJsonConfiguration() {
     const configurationPath = vscode.workspace.getConfiguration('codespice').get<string>('jsonConfigurationPath') ?? '';
 
@@ -238,4 +318,3 @@ export function browseJsonConfiguration() {
         }
     });
 }
-
