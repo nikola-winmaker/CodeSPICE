@@ -16,6 +16,10 @@
       {
         "command": "codespice.start",
         "title": "Start CodeSPICE"
+      },
+      {
+        "command": "codespice.stop",
+        "title": "Stop CodeSPICE"
       }
     ],
     "configuration": {
