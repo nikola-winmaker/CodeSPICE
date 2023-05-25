@@ -29,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     let requireCommentHeader = configuration.commenting?.requireHeader ?? true;
     let namingConventions = configuration.namingConventions ?? {};
     let maxCyclomatic = configuration.function.maxCyclomatic ?? 15;
+    let maxFunctionLines = configuration.function.maxLines ?? 50;
 
     // Iterate over all open text documents and evaluate the line count
     vscode.window.visibleTextEditors.forEach((editor) => {
@@ -36,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
         evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
         evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
         evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-        evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
+        evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
     });
 
     // Register a listener for changes in the active text document
@@ -49,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-            evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
+            evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
         }
     });
 
@@ -61,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-            evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
+            evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
         }
     });
 
@@ -76,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
                 evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
                 evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
                 evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-                evaluateCyclomaticComplexity(editor, maxCyclomatic, diagnosticCollection);
+                evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
             });
         }
     });
@@ -207,7 +208,7 @@ function isNameValid(name: string, convention: string): boolean {
 }
 
 function evaluateCyclomaticComplexity(editor: vscode.TextEditor, maxCyclomatic: number,
-                                      diagnosticCollection: vscode.DiagnosticCollection) {
+                                      maxFunctionLines: number, diagnosticCollection: vscode.DiagnosticCollection) {
     const text = editor.document.getText();
     const lines = text.split('\n');
     const diagnostics = [];
@@ -230,6 +231,19 @@ function evaluateCyclomaticComplexity(editor: vscode.TextEditor, maxCyclomatic: 
             const functionStartLine = i;
             const functionEndLine = findMatchingClosingBrace(lines, i);
             const functionCode = lines.slice(functionStartLine, functionEndLine + 1).join('\n');
+
+            // Exclude for and while loops from line limit check
+            if (!/^\s*(for|while)\s*\(/.test(line) && 
+                        functionEndLine - functionStartLine + 1 > maxFunctionLines) {
+                // Function exceeds line limit, generate diagnostic
+                const diagnostic = new vscode.Diagnostic(
+                  new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+                  `Function '${functionName}' exceeds the maximum line limit of ${maxFunctionLines}.`,
+                  vscode.DiagnosticSeverity.Warning
+                );
+                diagnostics.push(diagnostic);
+            }
+
             const complexity = calculateCyclomaticComplexity(functionCode);
 
             if (complexity > maxCyclomatic) {
