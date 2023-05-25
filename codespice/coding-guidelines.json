@@ -25,6 +25,5 @@
     "maxCyclomatic": 10,
     "maxLines": 50,
     "parameters": 4
-
   }
 }

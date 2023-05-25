@@ -30,6 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
     let namingConventions = configuration.namingConventions ?? {};
     let maxCyclomatic = configuration.function.maxCyclomatic ?? 15;
     let maxFunctionLines = configuration.function.maxLines ?? 50;
+    let maxFunctionParams = configuration.function.parameters ?? 4;
 
     // Iterate over all open text documents and evaluate the line count
     vscode.window.visibleTextEditors.forEach((editor) => {
@@ -37,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
         evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
         evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
         evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-        evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
+        evaluateFunctions(editor, maxCyclomatic, maxFunctionLines, maxFunctionParams, diagnosticCollection);
     });
 
     // Register a listener for changes in the active text document
@@ -50,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-            evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
+            evaluateFunctions(editor, maxCyclomatic, maxFunctionLines, maxFunctionParams, diagnosticCollection);
         }
     });
 
@@ -62,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
             evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
             evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
             evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-            evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
+            evaluateFunctions(editor, maxCyclomatic, maxFunctionLines, maxFunctionParams, diagnosticCollection);
         }
     });
 
@@ -77,7 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
                 evaluateLineCount(editor, lineCount, maxLineCount, maxLineLength, diagnosticCollection);
                 evaluateCommenting(editor, requireCommentHeader, diagnosticCollection);
                 evaluateNamingConventions(editor, namingConventions, diagnosticCollection);
-                evaluateCyclomaticComplexity(editor, maxCyclomatic, maxFunctionLines, diagnosticCollection);
+                evaluateFunctions(editor, maxCyclomatic, maxFunctionLines, maxFunctionParams, diagnosticCollection);
             });
         }
     });
@@ -207,14 +208,16 @@ function isNameValid(name: string, convention: string): boolean {
     }
 }
 
-function evaluateCyclomaticComplexity(editor: vscode.TextEditor, maxCyclomatic: number,
-                                      maxFunctionLines: number, diagnosticCollection: vscode.DiagnosticCollection) {
+function evaluateFunctions(editor: vscode.TextEditor, maxCyclomatic: number,
+                                      maxFunctionLines: number, maxFunctionParams: number,
+                                      diagnosticCollection: vscode.DiagnosticCollection) {
     const text = editor.document.getText();
     const lines = text.split('\n');
     const diagnostics = [];
 
     // Regular expression to match function declarations
-    const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*\{/g;
+    //const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*\{/g;
+    const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)\s*\{/g;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -228,6 +231,7 @@ function evaluateCyclomaticComplexity(editor: vscode.TextEditor, maxCyclomatic: 
         const match = functionRegex.exec(line);
         if (match) {
             const functionName = match[1];
+            const functionParams = match[2];
             const functionStartLine = i;
             const functionEndLine = findMatchingClosingBrace(lines, i);
             const functionCode = lines.slice(functionStartLine, functionEndLine + 1).join('\n');
@@ -243,6 +247,18 @@ function evaluateCyclomaticComplexity(editor: vscode.TextEditor, maxCyclomatic: 
                 );
                 diagnostics.push(diagnostic);
             }
+
+            const numParams = functionParams ? functionParams.split(',').length : 0;
+
+            if (numParams > maxFunctionParams) {
+                // Function has too many parameters, generate diagnostic
+                const diagnostic = new vscode.Diagnostic(
+                  new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+                  `Function '${functionName}' has ${numParams} parameters, which exceeds the maximum limit of ${maxFunctionParams}.`,
+                  vscode.DiagnosticSeverity.Warning
+                );
+                diagnostics.push(diagnostic);
+              }
 
             const complexity = calculateCyclomaticComplexity(functionCode);
 
