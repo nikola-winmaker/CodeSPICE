@@ -14,7 +14,6 @@ export function evaluateFunctions(editor: vscode.TextEditor,
     const diagnostics = [];
 
     // Regular expression to match function declarations
-    //const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*\{/g;
     const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)\s*\{/g;
 
     for (let i = 0; i < lines.length; i++) {
@@ -39,32 +38,11 @@ export function evaluateFunctions(editor: vscode.TextEditor,
                 continue;
             }
 
-            // Exclude for and while loops from line limit check
-            if (!/^\s*(for|while)\s*\(/.test(line) &&
-                functionEndLine - functionStartLine + 1 > maxFunctionLines) {
-                // Function exceeds line limit, generate diagnostic
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
-                    `Function '${functionName}' exceeds the maximum line limit of ${maxFunctionLines}.`,
-                    vscode.DiagnosticSeverity.Warning
-                );
-                diagnostics.push(diagnostic);
-            }
+            checkFunctoinMaxLines(line, functionEndLine, functionStartLine, maxFunctionLines, functionName, diagnostics);
 
             const numParams = functionParams ? functionParams.split(',').length : 0;
             const parameters = functionParams ? functionParams.split(',') : [];
-            // check number of parameters
-            if (numParams > maxFunctionParams) {
-                // Function has too many parameters, generate diagnostic
-                const diagnostic = new vscode.Diagnostic(
-                    new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
-                    `Function '${functionName}' has ${numParams} parameters, which exceeds the maximum limit of ${maxFunctionParams}.`,
-                    vscode.DiagnosticSeverity.Warning
-                );
-                diagnostics.push(diagnostic);
-            }
-
-            // check cyclomatic complexity
+            checkNumberOfParams(numParams, maxFunctionParams, functionStartLine, line, functionName, diagnostics);
             const complexity = calculateCyclomaticComplexity(functionCode);
             if (complexity > maxCyclomatic) {
                 const diagnostic = new vscode.Diagnostic(
@@ -75,21 +53,9 @@ export function evaluateFunctions(editor: vscode.TextEditor,
                 diagnostics.push(diagnostic);
             }
 
-            // Check if any parameter is validated or passed to another function
-            for (const parameter of parameters) {
-                const param = parameter.trim().split(' ')[1];
-
-                // Check if the parameter is used in a Boolean operation
-                const booleanOperationRegex = new RegExp(`(?:\\b\\S+\\s*(?:==|!=|>|<|>=|<=)\\s*${param}\\b|\\b${param}\\b\\s*(?:==|!=|>|<|>=|<=)\\s*\\S+|\\(\\s*${param}\\s*\\))`);
-                if (!functionCode.match(booleanOperationRegex)) {
-                    const diagnostic = new vscode.Diagnostic(
-                        new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
-                        `Parameter '${param}' in function '${functionName}' is not validated.`,
-                        vscode.DiagnosticSeverity.Warning
-                    );
-                    diagnostics.push(diagnostic);
-                }
-            }                      
+            checkParametersValidation(parameters, functionCode, functionStartLine, line, functionName, diagnostics);
+            checkFunctionArguments(editor, functionCode, diagnostics);
+            checkReturnStackVariableAddresses(functionCode, diagnostics);
         }
     }
 
@@ -98,6 +64,58 @@ export function evaluateFunctions(editor: vscode.TextEditor,
     diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
 }
 
+
+function checkFunctoinMaxLines(line: string, functionEndLine: number, functionStartLine: number, 
+                               maxFunctionLines: any, functionName: string, 
+                               diagnostics: any[]) {
+    // Exclude for and while loops from line limit check
+    if (!/^\s*(for|while)\s*\(/.test(line) &&
+        functionEndLine - functionStartLine + 1 > maxFunctionLines) {
+        // Function exceeds line limit, generate diagnostic
+        const diagnostic = new vscode.Diagnostic(
+            new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+            `Function '${functionName}' exceeds the maximum line limit of ${maxFunctionLines}.`,
+            vscode.DiagnosticSeverity.Warning
+        );
+        diagnostics.push(diagnostic);
+    }
+}
+
+function checkNumberOfParams(numParams: number, maxFunctionParams: any, functionStartLine: number, line: string, functionName: string, diagnostics: any[]) {
+    if (numParams > maxFunctionParams) {
+        // Function has too many parameters, generate diagnostic
+        const diagnostic = new vscode.Diagnostic(
+            new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+            `Function '${functionName}' has ${numParams} parameters, which exceeds the maximum limit of ${maxFunctionParams}.`,
+            vscode.DiagnosticSeverity.Warning
+        );
+        diagnostics.push(diagnostic);
+    }
+}
+
+function checkParametersValidation(parameters: string[], functionCode: string, 
+                                   functionStartLine: number, line: string, 
+                                   functionName: string, diagnostics: any[]) {
+    for (const parameter of parameters) {
+        const param = parameter.trim().split(' ')[1];
+
+        if (param === undefined) {
+            // Skip if the parameter is void
+            continue;
+        }
+
+        // Check if the parameter is used in a Boolean operation
+        const booleanOperationRegex = new RegExp(`(?:\\b\\S+\\s*(?:==|!=|>|<|>=|<=)\\s*${param}\\b|\\b${param}\\b\\s*(?:==|!=|>|<|>=|<=)\\s*\\S+|\\(\\s*${param}\\s*\\))`);
+        if (!functionCode.match(booleanOperationRegex)) {
+            const diagnostic = new vscode.Diagnostic(
+                new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+                `Parameter '${param}' in function '${functionName}' is not validated.`,
+                vscode.DiagnosticSeverity.Warning
+            );
+            diagnostics.push(diagnostic);
+        }
+    }
+}
 
 function calculateCyclomaticComplexity(code: string): number {
     // Regular expression to match decision points (if, else if, else, for, while)
@@ -129,4 +147,42 @@ function findMatchingClosingBrace(lines: string[], startIndex: number): number {
     }
 
     return startIndex;
+}
+
+function checkFunctionArguments(editor: vscode.TextEditor, text: string, diagnostics: any[]) {
+    const functionDeclarationRegex = /\b(\w+)\s+(\w+)\s*\(\s*\)\s*(?:;|{)/g;
+
+    let match;
+    while ((match = functionDeclarationRegex.exec(text)) !== null) {
+        const functionText = match[0];
+        const returnType = match[1];
+        const functionName = match[2];
+
+        if (returnType !== 'void') {
+            const diagnostic = new vscode.Diagnostic(
+                // Create a range for the function declaration
+                new vscode.Range(0, 0, 0, 0),
+                `Function '${functionName}' does not explicitly specify 'void' when accepting no arguments.`,
+                vscode.DiagnosticSeverity.Warning
+            );
+            diagnostics.push(diagnostic);
+        }
+    }
+}
+
+function checkReturnStackVariableAddresses(functionText: string, diagnostics: any[]) {
+    const variableAddressRegex = /\&\s*(\w+)/g;
+
+    let variableMatch;
+    while ((variableMatch = variableAddressRegex.exec(functionText)) !== null) {
+      const variableName = variableMatch[1];
+  
+      const diagnostic = new vscode.Diagnostic(
+        // Create a range for the variable address usage
+        new vscode.Range(0, 0, 0, 0),
+        `Return of stack variable address '${variableName}' in the given function.`,
+        vscode.DiagnosticSeverity.Warning
+      );
+      diagnostics.push(diagnostic);
+    }  
 }

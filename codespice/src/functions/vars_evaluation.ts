@@ -49,4 +49,3 @@ export function checkUninitializedVariables(editor: vscode.TextEditor,
     const updatedDiagnostics = [...existingDiagnostics, ...diagnostics];
     diagnosticCollection.set(editor.document.uri, updatedDiagnostics);
 }
-

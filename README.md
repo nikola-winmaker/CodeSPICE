@@ -17,19 +17,11 @@ Function Input Validation beefore ussage - Done
 
 # Preproessor
 
-PRE10-C. Wrap multistatement macros in a do-while loop
+PRE10-C. Wrap multistatement macros in a do-while loop - DONE
 https://wiki.sei.cmu.edu/confluence/display/c/PRE10-C.+Wrap+multistatement+macros+in+a+do-while+loop
 
-# Declarations and Initialization (DCL)
-DCL01-C. Do not reuse variable names in subscopes
-https://wiki.sei.cmu.edu/confluence/display/c/DCL01-C.+Do+not+reuse+variable+names+in+subscopes
-
-DCL04-C. Do not declare more than one variable per declaration
-https://wiki.sei.cmu.edu/confluence/display/c/DCL04-C.+Do+not+declare+more+than+one+variable+per+declaration
-
-DCL20-C. Explicitly specify void when a function accepts no arguments - Information Outflow
+DCL20-C. Explicitly specify void when a function accepts no arguments - Information Outflow: DONE
 https://wiki.sei.cmu.edu/confluence/display/c/DCL20-C.+Explicitly+specify+void+when+a+function+accepts+no+arguments
-
 
 CWE-562: Return of Stack Variable Address
 https://cwe.mitre.org/data/definitions/562.html
