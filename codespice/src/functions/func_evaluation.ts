@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 
-
 export function evaluateFunctions(editor: vscode.TextEditor, maxCyclomatic: number,
     maxFunctionLines: number, maxFunctionParams: number,
     diagnosticCollection: vscode.DiagnosticCollection) {
