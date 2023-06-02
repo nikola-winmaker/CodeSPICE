@@ -1,8 +1,14 @@
 import * as vscode from 'vscode';
 
-export function evaluateFunctions(editor: vscode.TextEditor, maxCyclomatic: number,
-    maxFunctionLines: number, maxFunctionParams: number,
-    diagnosticCollection: vscode.DiagnosticCollection) {
+export function evaluateFunctions(editor: vscode.TextEditor, 
+                                  configuration: any,
+                                  diagnosticCollection: vscode.DiagnosticCollection) {
+
+    // Retrieve the configuration values
+    const maxCyclomatic = configuration.function.maxCyclomatic ?? 15;
+    const maxFunctionLines = configuration.function.maxLines ?? 50;
+    const maxFunctionParams = configuration.function.parameters ?? 4;
+
     const text = editor.document.getText();
     const lines = text.split('\n');
     const diagnostics = [];

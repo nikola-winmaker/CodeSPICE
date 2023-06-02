@@ -22,28 +22,12 @@ export function activate(context: vscode.ExtensionContext) {
         // Load the JSON configuration
         cfg.loadJsonConfiguration(configuration);
 
-        // Retrieve the configuration values
-        const maxLineCount = configuration.fileLength?.maxLines ?? 400;
-        const maxLineLength = configuration.lineLength?.maxLength ?? 80;
-        const requireCommentHeader = configuration.commenting?.requireHeader ?? true;
-        const namingConventions = configuration.namingConventions ?? {};
-        const maxCyclomatic = configuration.function.maxCyclomatic ?? 15;
-        const maxFunctionLines = configuration.function.maxLines ?? 50;
-        const maxFunctionParams = configuration.function.parameters ?? 4;
-
-
         if (!scanningActive.value) {
             scanningActive.value = true;
 
             evaluations.evaluateAll(
                 scanningActive,
-                maxLineCount,
-                maxLineLength,
-                requireCommentHeader,
-                namingConventions,
-                maxCyclomatic,
-                maxFunctionLines,
-                maxFunctionParams,
+                configuration,
                 diagnosticCollection
             );
         }

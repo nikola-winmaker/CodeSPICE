@@ -5,13 +5,7 @@ import * as func_eval from './func_evaluation';
 
 export function evaluateAll(
     scanningActive: { value: boolean },
-    maxLineCount: number,
-    maxLineLength: number,
-    requireCommentHeader: boolean,
-    namingConventions: any,
-    maxCyclomatic: number,
-    maxFunctionLines: number,
-    maxFunctionParams: number,
+    configuration: any,
     diagnosticCollection: vscode.DiagnosticCollection
 ) {
     if (!scanningActive.value) {
@@ -33,25 +27,23 @@ export function evaluateAll(
             file_eval.evaluateLineCount(
                 editor,
                 lineCount,
-                maxLineCount,
-                maxLineLength,
+                configuration,
                 diagnosticCollection
             );
             file_eval.evaluateCommenting(
                 editor,
-                requireCommentHeader,
+                configuration,
+                // requireCommentHeader,
                 diagnosticCollection
             );
             file_eval.evaluateNamingConventions(
                 editor,
-                namingConventions,
+                configuration,
                 diagnosticCollection
             );
             func_eval.evaluateFunctions(
                 editor,
-                maxCyclomatic,
-                maxFunctionLines,
-                maxFunctionParams,
+                configuration,
                 diagnosticCollection
             );
         }

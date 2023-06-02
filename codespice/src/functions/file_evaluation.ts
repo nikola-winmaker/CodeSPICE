@@ -1,6 +1,14 @@
 import * as vscode from 'vscode';
 
-export function evaluateLineCount(editor: vscode.TextEditor, lineCount: number, maxLineCount: number, maxLineLength: number, diagnosticCollection: vscode.DiagnosticCollection) {
+export function evaluateLineCount(editor: vscode.TextEditor, 
+                                  lineCount: number,
+                                  configuration: any,
+                                  diagnosticCollection: vscode.DiagnosticCollection) {
+
+    // Retrieve the configuration values
+    const maxLineCount = configuration.fileLength?.maxLines ?? 400;
+    const maxLineLength = configuration.lineLength?.maxLength ?? 80;
+
     const existingDiagnostics = diagnosticCollection.get(editor.document.uri) || [];
     const lineCountDiagnostics = existingDiagnostics.filter(diagnostic => diagnostic.source === 'LineCount');
     const text = editor.document.getText();
@@ -34,7 +42,12 @@ export function evaluateLineCount(editor: vscode.TextEditor, lineCount: number, 
     diagnosticCollection.set(editor.document.uri, lineCountDiagnostics);
 }
 
-export function evaluateCommenting(editor: vscode.TextEditor, requireCommentHeader: boolean, diagnosticCollection: vscode.DiagnosticCollection) {
+export function evaluateCommenting(editor: vscode.TextEditor, 
+                                   configuration: any, 
+                                   diagnosticCollection: vscode.DiagnosticCollection) {
+    // Retrieve the configuration values
+    const requireCommentHeader = configuration.commenting?.requireHeader ?? true;
+    
     const existingDiagnostics = diagnosticCollection.get(editor.document.uri) || [];
     const commentingDiagnostics: vscode.Diagnostic[] = [];
     const text = editor.document.getText();
@@ -66,8 +79,11 @@ export function evaluateCommenting(editor: vscode.TextEditor, requireCommentHead
     }
 }
 
-export function evaluateNamingConventions(editor: vscode.TextEditor, namingConventions: any,
-    diagnosticCollection: vscode.DiagnosticCollection) {
+export function evaluateNamingConventions(editor: vscode.TextEditor, 
+                                          configuration: any,
+                                          diagnosticCollection: vscode.DiagnosticCollection) {
+    // Retrieve the configuration values
+    const namingConventions = configuration.namingConventions ?? {};
     const text = editor.document.getText();
     const vnamingConvention = namingConventions.variable;
 
