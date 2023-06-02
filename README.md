@@ -23,10 +23,10 @@ https://wiki.sei.cmu.edu/confluence/display/c/PRE10-C.+Wrap+multistatement+macro
 DCL20-C. Explicitly specify void when a function accepts no arguments - Information Outflow: DONE
 https://wiki.sei.cmu.edu/confluence/display/c/DCL20-C.+Explicitly+specify+void+when+a+function+accepts+no+arguments
 
-CWE-562: Return of Stack Variable Address
+CWE-562: Return of Stack Variable Address - DONE
 https://cwe.mitre.org/data/definitions/562.html
 
-CWE-478: Missing Default Case in Multiple Condition Expression
+CWE-478: Missing Default Case in Multiple Condition Expression - DONE
 https://cwe.mitre.org/data/definitions/478.html
 
 Rule 17.2 – Functions shall not call themselves, either directly or indirectly

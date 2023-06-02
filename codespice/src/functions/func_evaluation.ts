@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-export function evaluateFunctions(editor: vscode.TextEditor, 
-                                  configuration: any,
-                                  diagnosticCollection: vscode.DiagnosticCollection) {
+export function evaluateFunctions(editor: vscode.TextEditor,
+    configuration: any,
+    diagnosticCollection: vscode.DiagnosticCollection) {
 
     // Retrieve the configuration values
     const maxCyclomatic = configuration.function.maxCyclomatic ?? 15;
@@ -34,7 +34,7 @@ export function evaluateFunctions(editor: vscode.TextEditor,
             const functionCode = lines.slice(functionStartLine, functionEndLine + 1).join('\n');
 
             // function not closed
-            if(functionStartLine === functionEndLine){
+            if (functionStartLine === functionEndLine) {
                 continue;
             }
 
@@ -56,6 +56,7 @@ export function evaluateFunctions(editor: vscode.TextEditor,
             checkParametersValidation(parameters, functionCode, functionStartLine, line, functionName, diagnostics);
             checkFunctionArguments(editor, functionCode, diagnostics);
             checkReturnStackVariableAddresses(functionCode, diagnostics);
+            checkMissingDefaultCase(functionCode, diagnostics);
         }
     }
 
@@ -65,9 +66,9 @@ export function evaluateFunctions(editor: vscode.TextEditor,
 }
 
 
-function checkFunctoinMaxLines(line: string, functionEndLine: number, functionStartLine: number, 
-                               maxFunctionLines: any, functionName: string, 
-                               diagnostics: any[]) {
+function checkFunctoinMaxLines(line: string, functionEndLine: number, functionStartLine: number,
+    maxFunctionLines: any, functionName: string,
+    diagnostics: any[]) {
     // Exclude for and while loops from line limit check
     if (!/^\s*(for|while)\s*\(/.test(line) &&
         functionEndLine - functionStartLine + 1 > maxFunctionLines) {
@@ -93,9 +94,9 @@ function checkNumberOfParams(numParams: number, maxFunctionParams: any, function
     }
 }
 
-function checkParametersValidation(parameters: string[], functionCode: string, 
-                                   functionStartLine: number, line: string, 
-                                   functionName: string, diagnostics: any[]) {
+function checkParametersValidation(parameters: string[], functionCode: string,
+    functionStartLine: number, line: string,
+    functionName: string, diagnostics: any[]) {
     for (const parameter of parameters) {
         const param = parameter.trim().split(' ')[1];
 
@@ -175,14 +176,38 @@ function checkReturnStackVariableAddresses(functionText: string, diagnostics: an
 
     let variableMatch;
     while ((variableMatch = variableAddressRegex.exec(functionText)) !== null) {
-      const variableName = variableMatch[1];
-  
-      const diagnostic = new vscode.Diagnostic(
-        // Create a range for the variable address usage
-        new vscode.Range(0, 0, 0, 0),
-        `Return of stack variable address '${variableName}' in the given function.`,
-        vscode.DiagnosticSeverity.Warning
-      );
-      diagnostics.push(diagnostic);
-    }  
+        const variableName = variableMatch[1];
+
+        const diagnostic = new vscode.Diagnostic(
+            // Create a range for the variable address usage
+            new vscode.Range(0, 0, 0, 0),
+            `Return of stack variable address '${variableName}' in the given function.`,
+            vscode.DiagnosticSeverity.Warning
+        );
+        diagnostics.push(diagnostic);
+    }
+}
+
+function checkMissingDefaultCase(text: string, diagnostics: any[]) {
+    const switchRegex = /switch\s*\([^)]*\)\s*{((?:[^{}]*\{[^{}]*\})*[^{}]*?)}/g;
+    const caseRegex = /case\s+[^:]+:/g;
+    const defaultRegex = /default:/g;
+
+
+    let switchMatch;
+    while ((switchMatch = switchRegex.exec(text)) !== null) {
+        const switchText = switchMatch[0];
+        const caseMatches = switchText.match(caseRegex) || [];
+        const hasDefaultCase = defaultRegex.test(switchText);
+
+        if (caseMatches.length > 0 && !hasDefaultCase) {
+            const diagnostic = new vscode.Diagnostic(
+                // Create a range for the switch statement
+                new vscode.Range(0, 0, 0, 0),
+                'Missing default case in switch statement.',
+                vscode.DiagnosticSeverity.Warning
+            );
+            diagnostics.push(diagnostic);
+        }
+    }
 }
