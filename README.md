@@ -9,23 +9,13 @@ Inspector for code regarding ASPICE assessment
 
 ## TODO:
 
-Ussage of ninitialized variables
+Ussage of uninitialized variables - Done
 
-Function Input Validation beefore ussage
-
-unreachable code
+Function Input Validation beefore ussage - Done
 
 ## CERT C
 
-Rule: DCL30-C. Do not reuse a variable in its declarator or within its declarator scope.
-Description: Reusing a variable in its declarator or within its declarator scope can lead to unintended consequences and make the code harder to understand and maintain.
-
-Rule: MSC24-C. Do not access a volatile object through a non-volatile reference.
-Description: Accessing a volatile object through a non-volatile reference can lead to undefined behavior or unexpected results. Ensure that volatile objects are accessed correctly.
-
 # Preproessor
-PRE32-C. Do not use preprocessor directives in invocations of function-like macros
-https://wiki.sei.cmu.edu/confluence/display/c/PRE32-C.+Do+not+use+preprocessor+directives+in+invocations+of+function-like+macros
 
 PRE10-C. Wrap multistatement macros in a do-while loop
 https://wiki.sei.cmu.edu/confluence/display/c/PRE10-C.+Wrap+multistatement+macros+in+a+do-while+loop

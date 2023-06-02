@@ -34,6 +34,11 @@ export function evaluateFunctions(editor: vscode.TextEditor,
             const functionEndLine = findMatchingClosingBrace(lines, i);
             const functionCode = lines.slice(functionStartLine, functionEndLine + 1).join('\n');
 
+            // function not closed
+            if(functionStartLine === functionEndLine){
+                continue;
+            }
+
             // Exclude for and while loops from line limit check
             if (!/^\s*(for|while)\s*\(/.test(line) &&
                 functionEndLine - functionStartLine + 1 > maxFunctionLines) {
@@ -47,7 +52,8 @@ export function evaluateFunctions(editor: vscode.TextEditor,
             }
 
             const numParams = functionParams ? functionParams.split(',').length : 0;
-
+            const parameters = functionParams ? functionParams.split(',') : [];
+            // check number of parameters
             if (numParams > maxFunctionParams) {
                 // Function has too many parameters, generate diagnostic
                 const diagnostic = new vscode.Diagnostic(
@@ -58,8 +64,8 @@ export function evaluateFunctions(editor: vscode.TextEditor,
                 diagnostics.push(diagnostic);
             }
 
+            // check cyclomatic complexity
             const complexity = calculateCyclomaticComplexity(functionCode);
-
             if (complexity > maxCyclomatic) {
                 const diagnostic = new vscode.Diagnostic(
                     new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
@@ -68,6 +74,22 @@ export function evaluateFunctions(editor: vscode.TextEditor,
                 );
                 diagnostics.push(diagnostic);
             }
+
+            // Check if any parameter is validated or passed to another function
+            for (const parameter of parameters) {
+                const param = parameter.trim().split(' ')[1];
+
+                // Check if the parameter is used in a Boolean operation
+                const booleanOperationRegex = new RegExp(`(?:\\b\\S+\\s*(?:==|!=|>|<|>=|<=)\\s*${param}\\b|\\b${param}\\b\\s*(?:==|!=|>|<|>=|<=)\\s*\\S+|\\(\\s*${param}\\s*\\))`);
+                if (!functionCode.match(booleanOperationRegex)) {
+                    const diagnostic = new vscode.Diagnostic(
+                        new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),
+                        `Parameter '${param}' in function '${functionName}' is not validated.`,
+                        vscode.DiagnosticSeverity.Warning
+                    );
+                    diagnostics.push(diagnostic);
+                }
+            }                      
         }
     }
 

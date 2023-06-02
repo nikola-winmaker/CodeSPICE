@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as file_eval from './file_evaluation';
 import * as func_eval from './func_evaluation';
-
+import * as var_eval from './vars_evaluation';
+import * as macro_eval from './macros_evaluation';
 
 export function evaluateAll(
     scanningActive: { value: boolean },
@@ -46,6 +47,13 @@ export function evaluateAll(
                 configuration,
                 diagnosticCollection
             );
+
+            var_eval.checkUninitializedVariables(editor, diagnosticCollection);
+
+            macro_eval.isMacroEnclosedWithDoWhile(
+                editor,
+                configuration,
+                diagnosticCollection);
         }
     }
 

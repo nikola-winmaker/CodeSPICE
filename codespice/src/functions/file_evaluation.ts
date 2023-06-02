@@ -93,10 +93,11 @@ export function evaluateNamingConventions(editor: vscode.TextEditor,
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
 
-        // Skip lines starting with #
-        if (line.startsWith('#')) {
+        // Skip lines starting with '#'
+        if (line.startsWith("#") || line.startsWith("//") || line.startsWith("*")) {
             continue;
         }
+
 
         const nameRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
         let match;
@@ -121,6 +122,12 @@ export function evaluateNamingConventions(editor: vscode.TextEditor,
 
 
 function isNameValid(name: string, convention: string): boolean {
+
+    // Skip all capital letters, usually those are constants
+    if (name === name.toUpperCase()) {
+        return true;
+    }
+
     switch (convention) {
         case "camelCase":
             return /^([a-z][a-zA-Z0-9]*)$/.test(name);
