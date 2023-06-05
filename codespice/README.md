@@ -13,10 +13,20 @@ Use ctrl+shift+p and type CodeSpice for command options.
 
 Following features are implemented:
 * Naming convention check
-* Line length
 * File header comment missing 
 * File length check
-* Function cyclomatic complexity, maximum lines, and maximum parameters.
+* File horizontal line length check
+* Function cyclomatic complexity
+* Function maximum lines
+* Function maximum parameters
+* Function parameters validation check
+* Function must have explicit arguments
+* Function recursion is not allowed
+* Macros has to be enclosed with do/while
+* Swtch/case must have default case.
+* Variables must be initialized before use
+* Variables address from stack must not be returned from a function
+* Variables must no have narrowing conversions and type mismatches 
 
 ---
 
@@ -26,18 +36,10 @@ Make sure to provide configuration in json format:
 
 ```json
 {
-  "indentation": {
-    "type": "spaces",
-    "size": 4
-  },
   "namingConventions": {
     "variable": "snake_case",
     "function": "snake_case",
     "constant": "UPPER_CASE"
-  },
-  "spacing": {
-    "aroundOperators": true,
-    "beforeBraces": true
   },
   "lineLength": {
     "maxLength": 80
