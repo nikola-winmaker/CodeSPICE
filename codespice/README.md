@@ -3,16 +3,11 @@
 For example:
 
 This extension has the following settings:
+* `codespice.jsonConfigurationPath`: Path to json configuration which contains rules.
 
-* `codespice.jsonConfigurationPath`: Path to json configuration for coding guideline.
+Use ctrl+shift+p and type CodeSpice for command options.
 * `codespice.start`: Enable code extension.
 * `codespice.stop`: Stop code extension.
-
-User ctrl+shift+p and type CodeSpice for command options.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
 
 ## Release Notes
 
@@ -25,9 +20,11 @@ Following features are implemented:
 
 ---
 
-## Following extension guidelines
+## JsonConfiguration example:
 
 Make sure to provide configuration in json format:
+
+```json
 {
   "indentation": {
     "type": "spaces",
@@ -55,7 +52,18 @@ Make sure to provide configuration in json format:
     "maxCyclomatic": 10,
     "maxLines": 50,
     "parameters": 4
+    "macro_enclose": true,
+    "params_validation": true,
+    "no_args_check": true,
+    "default_case_check": true,
+    "recursion_check": true,
+  },
+  "variables": {
+    "always_init": true,
+    "stack_return_check": true,
+    "narrow_conversion": false,
   }
 }
+```
 
 **Enjoy!**
