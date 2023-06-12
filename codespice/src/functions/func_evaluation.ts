@@ -14,7 +14,7 @@ export function evaluateFunctions(editor: vscode.TextEditor,
     const diagnostics = [];
 
     // Regular expression to match function declarations
-    const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)\s*\{/g;
+    const functionRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)\s*(?<!\b(?:for|while|if|switch|catch|return)\b\s*\([^)]*\)\s*)\{/g;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -106,7 +106,8 @@ function checkParametersValidation(parameters: string[], functionCode: string,
         }
 
         // Check if the parameter is used in a Boolean operation
-        const booleanOperationRegex = new RegExp(`(?:\\b\\S+\\s*(?:==|!=|>|<|>=|<=)\\s*${param}\\b|\\b${param}\\b\\s*(?:==|!=|>|<|>=|<=)\\s*\\S+|\\(\\s*${param}\\s*\\))`);
+        const booleanOperationRegex = 
+        new RegExp(`(?:\\b\\S+\\s*(?:==|!=|>|<|>=|<=)\\s*${param}\\b|\\b${param}\\b\\s*(?:==|!=|>|<|>=|<=)\\s*\\S+|\\(\\s*${param}\\s*\\))`);
         if (!functionCode.match(booleanOperationRegex)) {
             const diagnostic = new vscode.Diagnostic(
                 new vscode.Range(functionStartLine, line.indexOf(functionName), functionStartLine, line.indexOf(functionName) + functionName.length),

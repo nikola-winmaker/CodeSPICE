@@ -98,11 +98,13 @@ export function evaluateNamingConventions(editor: vscode.TextEditor,
             continue;
         }
 
-
-        const nameRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+        // const nameRegex = /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+        const nameRegex = /(?:[^'"\/]|\/\*(?:[^*]|\*(?!\/))*\*\/|\/\/.*?)(\b[a-zA-Z_][a-zA-Z0-9_]*)/g;
+        // Remove everything on the right of // comments
+        const lineWithoutComments = line.split("//")[0];
+        
         let match;
-
-        while ((match = nameRegex.exec(line))) {
+        while ((match = nameRegex.exec(lineWithoutComments))) {
             const foundName = match[1];
             if (!isNameValid(foundName, vnamingConvention)) {
                 const diagnostic = new vscode.Diagnostic(
