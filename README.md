@@ -29,8 +29,6 @@ https://cwe.mitre.org/data/definitions/562.html
 CWE-478: Missing Default Case in Multiple Condition Expression - DONE
 https://cwe.mitre.org/data/definitions/478.html
 
-Rule 17.2 – Functions shall not call themselves, either directly or indirectly
-
 Rule 13.2: The value of an expression should not be assigned to an object with a narrower essential type or of a different essential type category.
-This rule prevents narrowing conversions and type mismatches that could lead to security vulnerabilities, such as buffer overflows or incorrect behavior due to data corruption
+
 
